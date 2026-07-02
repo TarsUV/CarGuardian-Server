@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Car Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<h1>Vehículo DEMO</h1>
+
+<div>
+
+Sensor:
+
+<span id="sensor">
+
+0
+
+</span>
+
+</div>
+
+<br>
+
+<input
+id="led"
+type="range"
+min="0"
+max="255"
+/>
+
+<div>
+
+LED:
+
+<span id="ledvalue">
+
+0
+
+</span>
+
+</div>
+
+<script src="/socket.io/socket.io.js">
+
+</script>
+
+<script src="app.js">
+
+</script>
+
+</body>
+
+</html>
