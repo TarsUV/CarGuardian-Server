@@ -6,28 +6,69 @@ const path=require("path");
 
 const {execSync}=require("child_process");
 
+let last="";
+
 async function update(){
 
 try{
 
-console.log(
-"Buscando ngrok..."
+const r=
+
+await axios.get(
+
+"http://127.0.0.1:4040/api/tunnels"
+
 );
 
-const r=
-await axios.get(
-"http://127.0.0.1:4040/api/tunnels"
+const tunnel=
+
+r.data.tunnels.find(
+
+t=>
+
+t.public_url.startsWith(
+
+"https"
+
+)
+
 );
+
+if(!tunnel){
+
+console.log(
+"No hay tunel"
+);
+
+return;
+
+}
 
 const url=
-r.data
-.tunnels[0]
-.public_url;
+
+tunnel.public_url;
+
+if(
+
+url===last
+
+){
+
+return;
+
+}
+
+console.log();
 
 console.log(
-"URL:",
+"URL nueva:"
+);
+
+console.log(
 url
 );
+
+last=url;
 
 const file=
 
@@ -44,6 +85,7 @@ path.join(
 const data={
 
 project:
+
 "CarGuardian Analytics",
 
 server:{
@@ -51,9 +93,11 @@ server:{
 url,
 
 protocol:
+
 "https",
 
 backend_port:
+
 4000,
 
 updated_at:
@@ -67,27 +111,26 @@ new Date()
 discovery:{
 
 refresh_hours:
+
 24,
 
 retry_minutes:
+
 10
 
 },
 
 status:{
 
-maintenance:
-false,
+maintenance:false,
 
-enabled:
-true
+enabled:true
 
 },
 
 update:{
 
-check:
-true
+check:true
 
 }
 
@@ -103,14 +146,8 @@ data,
 
 null,
 
-2
+2)
 
-)
-
-);
-
-console.log(
-"JSON actualizado"
 );
 
 execSync(
@@ -127,9 +164,11 @@ cwd:
 
 );
 
+try{
+
 execSync(
 
-'git commit -m "update ngrok"',
+'git commit -m "ngrok auto update"',
 
 {
 
@@ -140,6 +179,8 @@ cwd:
 }
 
 );
+
+}catch{}
 
 execSync(
 
@@ -164,11 +205,23 @@ console.log(
 catch(e){
 
 console.log(
-e.message
+
+"Esperando ngrok..."
+
 );
 
 }
 
 }
 
-update();
+console.log(
+"Watcher iniciado"
+);
+
+setInterval(
+
+update,
+
+15000
+
+);

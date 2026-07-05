@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activación CarGuardian</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background: #f4f4f4;
+    }
+    .card {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    h2 { color: #1e40af; }
+    a {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 25px;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Activación de Dispositivo</h2>
+    <p id="deviceInfo">Cargando información...</p>
+    
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const deviceId = params.get("device");
+
+      if (deviceId) {
+        document.getElementById("deviceInfo").innerHTML = `
+          <strong>Dispositivo:</strong> ${deviceId}<br><br>
+          <a href="${window.location.origin}/login?device=${deviceId}">
+            → Iniciar Sesión y Activar
+          </a>
+        `;
+      } else {
+        document.getElementById("deviceInfo").innerHTML = `
+          Error: No se encontró el identificador del dispositivo.
+        `;
+      }
+    </script>
+  </div>
+</body>
+</html>

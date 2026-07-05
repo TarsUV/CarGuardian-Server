@@ -1,56 +1,69 @@
-const express=require("express");
-const http=require("http");
-const {Server}=require("socket.io");
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 
-const app=express();
-
-const server=http.createServer(app);
-
-const io=new Server(server);
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 app.use(express.json());
-
 app.use(express.static("public"));
 
-let state={
-sensor:0,
-led:0
-};
+// Base de datos en memoria (por ahora)
+const vehicles = new Map(); // device_id -> data
 
-app.post("/telemetry",(req,res)=>{
+// Ruta para recibir datos de la ESP32
+app.post("/telemetry", (req, res) => {
+    const { device_id, data } = req.body;
 
-state.sensor=req.body.sensor;
+    if (!device_id) {
+        return res.status(400).send({ error: "device_id requerido" });
+    }
 
-io.emit("telemetry",state);
+    // Guardar datos del vehículo
+    if (!vehicles.has(device_id)) {
+        vehicles.set(device_id, {});
+    }
 
-res.send({ok:true});
+    vehicles.get(device_id).lastUpdate = new Date();
+    vehicles.get(device_id).sensorData = data;
 
+    // Emitir a todos los dashboards conectados
+    io.emit("telemetry", { device_id, data });
+
+    console.log(`Datos recibidos de ${device_id}:`, data);
+    res.send({ ok: true });
 });
 
-app.post("/command",(req,res)=>{
+// Ruta para enviar comandos a un dispositivo específico
+app.post("/command", (req, res) => {
+    const { device_id, command } = req.body;
 
-state.led=req.body.led;
+    if (!device_id || !command) {
+        return res.status(400).send({ error: "device_id y command requeridos" });
+    }
 
-io.emit("command",state);
+    // Emitir comando solo al dispositivo objetivo
+    io.emit("command", { device_id, command });
 
-res.send(state);
-
+    console.log(`Comando enviado a ${device_id}:`, command);
+    res.send({ ok: true });
 });
 
-app.get("/status",(req,res)=>{
-
-res.send(state);
-
+app.get("/vehicles", (req, res) => {
+    res.json(Object.fromEntries(vehicles));
 });
 
-io.on("connection",()=>{
-
-console.log("dashboard conectado");
-
+io.on("connection", (socket) => {
+    console.log("Dashboard conectado");
+    
+    socket.on("disconnect", () => {
+        console.log("Dashboard desconectado");
+    });
 });
 
-server.listen(4000,()=>{
-
-console.log("Servidor puerto 4000");
-
+server.listen(4000, () => {
+    console.log("Servidor corriendo en puerto 4000");
 });
