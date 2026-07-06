@@ -4,66 +4,62 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 app.use(express.static("public"));
 
 // Base de datos en memoria (por ahora)
-const vehicles = new Map(); // device_id -> data
+const devices = new Map(); // device_id -> data
 
-// Ruta para recibir datos de la ESP32
+// Recibir datos de la ESP32
 app.post("/telemetry", (req, res) => {
-    const { device_id, data } = req.body;
+  const { device_id, sensor } = req.body;
 
-    if (!device_id) {
-        return res.status(400).send({ error: "device_id requerido" });
-    }
+  if (!device_id) {
+    return res.status(400).json({ error: "device_id es requerido" });
+  }
 
-    // Guardar datos del vehículo
-    if (!vehicles.has(device_id)) {
-        vehicles.set(device_id, {});
-    }
+  if (!devices.has(device_id)) {
+    devices.set(device_id, { lastUpdate: new Date(), data: {} });
+  }
 
-    vehicles.get(device_id).lastUpdate = new Date();
-    vehicles.get(device_id).sensorData = data;
+  devices.get(device_id).lastUpdate = new Date();
+  devices.get(device_id).data.sensor = sensor;
 
-    // Emitir a todos los dashboards conectados
-    io.emit("telemetry", { device_id, data });
+  // Enviar a todos los dashboards conectados
+  io.emit("telemetry", { device_id, sensor });
 
-    console.log(`Datos recibidos de ${device_id}:`, data);
-    res.send({ ok: true });
+  console.log(`Datos de ${device_id}: sensor = ${sensor}`);
+  res.json({ ok: true });
 });
 
-// Ruta para enviar comandos a un dispositivo específico
+// Enviar comando a un dispositivo específico
 app.post("/command", (req, res) => {
-    const { device_id, command } = req.body;
+  const { device_id, command } = req.body;
 
-    if (!device_id || !command) {
-        return res.status(400).send({ error: "device_id y command requeridos" });
-    }
+  if (!device_id || command === undefined) {
+    return res.status(400).json({ error: "device_id y command son requeridos" });
+  }
 
-    // Emitir comando solo al dispositivo objetivo
-    io.emit("command", { device_id, command });
+  io.emit("command", { device_id, command });
 
-    console.log(`Comando enviado a ${device_id}:`, command);
-    res.send({ ok: true });
+  console.log(`Comando para ${device_id}: ${command}`);
+  res.json({ ok: true });
 });
 
-app.get("/vehicles", (req, res) => {
-    res.json(Object.fromEntries(vehicles));
+// Ver todos los dispositivos
+app.get("/devices", (req, res) => {
+  res.json(Object.fromEntries(devices));
 });
 
 io.on("connection", (socket) => {
-    console.log("Dashboard conectado");
-    
-    socket.on("disconnect", () => {
-        console.log("Dashboard desconectado");
-    });
+  console.log("Dashboard conectado");
+  socket.on("disconnect", () => {
+    console.log("Dashboard desconectado");
+  });
 });
 
 server.listen(4000, () => {
-    console.log("Servidor corriendo en puerto 4000");
+  console.log("Servidor corriendo en puerto 4000");
 });
